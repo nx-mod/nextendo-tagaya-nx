@@ -60,3 +60,21 @@ func TestIfNoneMatch304(t *testing.T) {
 		t.Fatalf("plain GET code %d etag %q", rec.Code, rec.Header().Get("ETag"))
 	}
 }
+
+// TestEmbeddedFallback: with no versions.json on disk, buildVersionList must use
+// the embedded default and return a valid list, not an error (regression for the
+// server 500-ing every request on a fresh deploy).
+func TestEmbeddedFallback(t *testing.T) {
+	versionsPath = filepath.Join(t.TempDir(), "does-not-exist.json")
+	body, etag, err := buildVersionList(versionsPath)
+	if err != nil {
+		t.Fatalf("fallback errored: %v", err)
+	}
+	var vl versionList
+	if err := json.Unmarshal(body, &vl); err != nil {
+		t.Fatal(err)
+	}
+	if vl.FormatVersion != 1 || len(vl.Titles) == 0 || etag == "" {
+		t.Fatalf("embedded fallback produced empty list: %+v", vl)
+	}
+}

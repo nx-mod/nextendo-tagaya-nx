@@ -16,8 +16,11 @@ package main
 
 import (
 	"crypto/sha1"
+	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -25,6 +28,14 @@ import (
 	"sync/atomic"
 	"time"
 )
+
+// embeddedVersions is the built-in version list, used when no versions.json is
+// present on disk. It keeps Tagaya answering (rather than 500-ing every request)
+// on a fresh deploy where the operator has not dropped a file yet; a real
+// versions.json at TAGAYA_VERSIONS still overrides it.
+//
+//go:embed versions.json
+var embeddedVersions []byte
 
 var (
 	httpPort     = envOrInt("TAGAYA_PORT", 8471)
@@ -91,9 +102,23 @@ func handleVersionList(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(body)
 }
 
+// readVersions returns the version-list JSON: the on-disk file at path if it
+// exists, otherwise the embedded default. Only a genuine read error (e.g.
+// permissions) surfaces — a missing file is not an error.
+func readVersions(path string) ([]byte, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return embeddedVersions, nil
+		}
+		return nil, err
+	}
+	return raw, nil
+}
+
 // buildVersionList renders versions.json into the Tagaya response and its ETag.
 func buildVersionList(path string) ([]byte, string, error) {
-	raw, err := os.ReadFile(path)
+	raw, err := readVersions(path)
 	if err != nil {
 		return nil, "", err
 	}
