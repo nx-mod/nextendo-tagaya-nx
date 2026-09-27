@@ -1,0 +1,7 @@
+/server
+/nextendo-tagaya-nx
+*.out
+cert.pem
+key.pem
+*.pem
+.env
