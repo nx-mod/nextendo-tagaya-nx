@@ -1,5 +1,7 @@
 # nextendo-tagaya-nx
 
+**A new service implementation by nx-mod** for the Nextendo Network.
+
 Tagaya — the Nintendo Switch **title-version-list** service — for [Nextendo Network](https://nextendo.network). Source only. Not affiliated with Nintendo.
 
 ## Why
